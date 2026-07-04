@@ -31,6 +31,15 @@ def test_output_path_for_adds_preset_name_when_present(tmp_path: Path) -> None:
     )
 
 
+def test_output_path_for_preserves_path_relative_to_base_dir(tmp_path: Path) -> None:
+    design = tmp_path / "parts/box.py"
+
+    assert (
+        output_path_for(design, tmp_path / "out", "stl", "small", base_dir=tmp_path)
+        == tmp_path / "out/parts/box-small.stl"
+    )
+
+
 def test_build_command_includes_trust_python_and_presets(tmp_path: Path) -> None:
     command = build_command(
         pythonscad="/usr/bin/pythonscad",
@@ -105,6 +114,7 @@ def test_run_jobs_dry_run_prints_command_without_runner(tmp_path: Path, capsys) 
 
     assert exit_code == 0
     assert "pythonscad -o" in capsys.readouterr().out
+    assert not job.output_path.parent.exists()
 
 
 def test_run_jobs_skips_up_to_date_outputs(tmp_path: Path) -> None:
@@ -134,6 +144,31 @@ def test_run_jobs_propagates_nonzero_exit_code(tmp_path: Path) -> None:
     )
 
     assert run_jobs([job], runner=_failing_runner) == 7
+
+
+def test_run_jobs_returns_first_nonzero_exit_code(tmp_path: Path) -> None:
+    first_design = tmp_path / "first.py"
+    second_design = tmp_path / "second.py"
+    first_design.write_text("", encoding="utf-8")
+    second_design.write_text("", encoding="utf-8")
+    jobs = [
+        RenderJob(
+            design_path=first_design,
+            output_path=tmp_path / "out/first.stl",
+            command=("pythonscad", str(first_design)),
+        ),
+        RenderJob(
+            design_path=second_design,
+            output_path=tmp_path / "out/second.stl",
+            command=("pythonscad", str(second_design)),
+        ),
+    ]
+    return_codes = iter([7, 3])
+
+    def runner(command: Sequence[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(command, next(return_codes))
+
+    assert run_jobs(jobs, runner=runner) == 7
 
 
 def _recording_runner(

@@ -46,13 +46,15 @@ def output_path_for(
     output_dir: Path,
     output_format: str,
     preset_name: str | None,
+    *,
+    base_dir: Path | None = None,
 ) -> Path:
     """Build an output path for a design and optional preset."""
     extension = output_format.lstrip(".")
     stem = sanitize_filename_part(design_path.stem)
     if preset_name:
         stem = f"{stem}-{sanitize_filename_part(preset_name)}"
-    return output_dir / f"{stem}.{extension}"
+    return output_dir / _relative_output_parent(design_path, base_dir) / f"{stem}.{extension}"
 
 
 def build_command(
@@ -85,6 +87,7 @@ def plan_jobs(
     output_dir: Path,
     output_format: str,
     pythonscad: str,
+    base_dir: Path | None = None,
 ) -> list[RenderJob]:
     """Create render jobs for designs and their optional customizer presets."""
     jobs: list[RenderJob] = []
@@ -101,10 +104,17 @@ def plan_jobs(
                         pythonscad=pythonscad,
                         preset_path=preset_path,
                         preset=preset,
+                        base_dir=base_dir,
                     )
                 )
         else:
-            output_path = output_path_for(design_path, output_dir, output_format, None)
+            output_path = output_path_for(
+                design_path,
+                output_dir,
+                output_format,
+                None,
+                base_dir=base_dir,
+            )
             jobs.append(
                 RenderJob(
                     design_path=design_path,
@@ -129,27 +139,33 @@ def run_jobs(
     """Execute planned render jobs and return a process-style exit code."""
     actual_runner = runner or _default_runner
     exit_code = 0
+    failure_count = 0
 
     for job in jobs:
         if not force and is_up_to_date(job.output_path, job.dependencies):
             LOG.info("%s is up to date", job.output_path)
             continue
 
-        job.output_path.parent.mkdir(parents=True, exist_ok=True)
         LOG.info("Rendering %s", job.output_path)
         LOG.debug("Running command: %r", list(job.command))
         if dry_run:
             print(" ".join(job.command))
             continue
 
+        job.output_path.parent.mkdir(parents=True, exist_ok=True)
         result = actual_runner(job.command)
         if result.returncode != 0:
-            exit_code = result.returncode
+            failure_count += 1
+            if exit_code == 0:
+                exit_code = result.returncode
             LOG.error(
                 "PythonSCAD failed for %s with exit code %s",
                 job.design_path,
                 result.returncode,
             )
+
+    if failure_count:
+        LOG.error("%d render job(s) failed", failure_count)
 
     return exit_code
 
@@ -162,8 +178,15 @@ def _job_for_preset(
     pythonscad: str,
     preset_path: Path,
     preset: Preset,
+    base_dir: Path | None,
 ) -> RenderJob:
-    output_path = output_path_for(design_path, output_dir, output_format, preset.name)
+    output_path = output_path_for(
+        design_path,
+        output_dir,
+        output_format,
+        preset.name,
+        base_dir=base_dir,
+    )
     return RenderJob(
         design_path=design_path,
         output_path=output_path,
@@ -177,6 +200,15 @@ def _job_for_preset(
         preset_path=preset_path,
         preset_name=preset.name,
     )
+
+
+def _relative_output_parent(design_path: Path, base_dir: Path | None) -> Path:
+    if base_dir is None:
+        return Path()
+    try:
+        return design_path.resolve().relative_to(base_dir.resolve()).parent
+    except ValueError:
+        return Path()
 
 
 def _default_runner(command: Sequence[str]) -> RunResult:
