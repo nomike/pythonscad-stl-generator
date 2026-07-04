@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pythonscad-stl-generator"
+dynamic = ["version"]
+description = "Render PythonSCAD design scripts to STL files, including customizer presets."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Nomike" },
+]
+keywords = ["3d", "cad", "openscad", "pythonscad", "stl", "3d-printing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Manufacturing",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "docopt-ng>=0.9,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.5",
+    "pytest>=8",
+    "pytest-cov>=7",
+    "ruff>=0.15",
+]
+
+[project.scripts]
+generate-pythonscad-stls = "pythonscad_stl_generator.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/nomike/pythonscad-stl-generator"
+Repository = "https://github.com/nomike/pythonscad-stl-generator"
+Issues = "https://github.com/nomike/pythonscad-stl-generator/issues"
+Changelog = "https://github.com/nomike/pythonscad-stl-generator/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { file = "VERSION.txt" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pythonscad_stl_generator = ["py.typed"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.format]
+quote-style = "double"
