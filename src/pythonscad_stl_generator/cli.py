@@ -63,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
             output_dir=output_dir,
             output_format=str(arguments["--format"]),
             pythonscad=str(arguments["--pythonscad"]),
+            base_dir=directory,
         )
     except PresetError as error:
         logging.error("%s", error)
