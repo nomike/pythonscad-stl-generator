@@ -15,7 +15,7 @@ repos:
         args: ["--fix"]
       - id: ruff-format
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.23.0
+    rev: v0.23.1
     hooks:
       - id: markdownlint-cli2
         exclude: ^CHANGELOG\.md$
