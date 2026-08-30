@@ -66,7 +66,7 @@ def build_command(
     preset_name: str | None = None,
 ) -> tuple[str, ...]:
     """Construct the PythonSCAD CLI invocation for one render."""
-    command = [pythonscad, "-o", str(output_path), "--trust-python"]
+    command = [pythonscad, "--render", "-o", str(output_path), "--trust-python"]
     if preset_path is not None and preset_name is not None:
         command.extend(["-p", str(preset_path), "-P", preset_name])
     command.append(str(design_path))
