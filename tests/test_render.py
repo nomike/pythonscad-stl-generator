@@ -51,6 +51,7 @@ def test_build_command_includes_trust_python_and_presets(tmp_path: Path) -> None
 
     assert command == (
         "/usr/bin/pythonscad",
+        "--render",
         "-o",
         str(tmp_path / "out/box-large.stl"),
         "--trust-python",
